@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { HelpCircle, Moon, Settings, Sun, Info } from "lucide-react";
+import {
+  HelpCircle,
+  Keyboard,
+  Moon,
+  Settings,
+  Sun,
+  Info,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -14,10 +23,13 @@ import {
 } from "./ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { useSound } from "./sound-provider";
 
 export default function GameMenu() {
   const { theme, setTheme } = useTheme();
+  const { enabled: soundEnabled, toggle: toggleSound } = useSound();
   const [showRules, setShowRules] = useState<boolean>(false);
+  const [showControls, setShowControls] = useState<boolean>(false);
 
   return (
     <>
@@ -40,6 +52,10 @@ export default function GameMenu() {
             <HelpCircle className="mr-2 h-4 w-4" />
             <span>Game Rules</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowControls(true)}>
+            <Keyboard className="mr-2 h-4 w-4" />
+            <span>Keyboard Controls</span>
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
@@ -52,6 +68,22 @@ export default function GameMenu() {
               <>
                 <Moon className="mr-2 h-4 w-4" />
                 <span>Switch to Dark</span>
+              </>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={toggleSound}
+            aria-checked={soundEnabled}
+          >
+            {soundEnabled ? (
+              <>
+                <Volume2 className="mr-2 h-4 w-4" />
+                <span>Sound: On</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="mr-2 h-4 w-4" />
+                <span>Sound: Off</span>
               </>
             )}
           </DropdownMenuItem>
@@ -116,6 +148,42 @@ export default function GameMenu() {
                 the board.
               </p>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showControls} onOpenChange={setShowControls}>
+        <DialogContent className="mx-auto mt-4 max-h-[90dvh] w-full max-w-xs overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
+              <Keyboard className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+              Keyboard Controls
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 text-xs leading-relaxed sm:text-sm md:text-base">
+            <p>
+              Click the board once, or Tab to it, to give it keyboard focus.
+            </p>
+
+            <div className="flex items-center justify-between gap-4">
+              <span>Move focus</span>
+              <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                ↑ ↓ ← → / W A S D
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <span>Select / jump</span>
+              <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                Enter / Space
+              </span>
+            </div>
+
+            <p>
+              Move focus onto a marble and select it, then move focus onto a
+              highlighted hole and select again to jump.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

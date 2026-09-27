@@ -21,5 +21,7 @@ export type GameBoardProps = {
   boardRef: React.RefObject<HTMLDivElement | null>;
   gameState: GameState;
   boardSize: number;
+  focused: Position;
   handleMarbleClick: (row: number, col: number) => void;
+  handleBoardKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
 };

@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { toast } from "sonner";
 
 import GameBoard from "./game-board";
 import GameHeader from "./game-header";
+import { useSound } from "./sound-provider";
+import { playMoveSound, playSelectSound, playWinSound, playLoseSound } from "@/lib/sounds";
 import type { GameState, Position } from "@/types";
 
 export default function PegSolitaire() {
@@ -31,6 +34,9 @@ export default function PegSolitaire() {
 
   const [remainingMarbles, setRemainingMarbles] = useState(32);
   const [boardSize, setBoardSize] = useState(0);
+  const [focused, setFocused] = useState<Position>({ row: 3, col: 3 });
+
+  const { enabled: soundEnabled } = useSound();
 
   const countMarbles = useCallback((grid: number[][]): number => {
     return grid.flat().filter((cell) => cell === 1).length;
@@ -121,6 +127,10 @@ export default function PegSolitaire() {
 
   useEffect(() => {
     if (gameState.gameOver) {
+      if (soundEnabled) {
+        if (gameState.won) playWinSound();
+        else playLoseSound();
+      }
       toast(
         gameState.won
           ? "🎉 Victory! Only one marble left."
@@ -132,10 +142,36 @@ export default function PegSolitaire() {
         },
       );
     }
-  }, [gameState.gameOver, gameState.won, resetGame]);
+  }, [gameState.gameOver, gameState.won, resetGame, soundEnabled]);
+
+  const moveFocus = useCallback(
+    (dr: number, dc: number) => {
+      setFocused((prev) => {
+        let row = prev.row;
+        let col = prev.col;
+
+        do {
+          row += dr;
+          col += dc;
+        } while (
+          row >= 0 &&
+          row < 7 &&
+          col >= 0 &&
+          col < 7 &&
+          gameState.grid[row][col] === 0
+        );
+
+        if (row < 0 || row >= 7 || col < 0 || col >= 7) return prev;
+        return { row, col };
+      });
+    },
+    [gameState.grid],
+  );
 
   const handleMarbleClick = useCallback(
     (row: number, col: number) => {
+      setFocused({ row, col });
+
       setGameState((prevState) => {
         const newState = {
           ...prevState,
@@ -165,10 +201,15 @@ export default function PegSolitaire() {
             const marblesLeft = countMarbles(grid);
             newState.won = marblesLeft === 1;
 
+            if (soundEnabled) playMoveSound();
+
             return newState;
           } else if (grid[row][col] === 1) {
             newState.selected = { row, col };
             newState.validMoves = findValidMoves({ row, col }, grid);
+
+            if (soundEnabled) playSelectSound();
+
             return newState;
           } else {
             newState.selected = null;
@@ -178,13 +219,51 @@ export default function PegSolitaire() {
         } else if (grid[row][col] === 1) {
           newState.selected = { row, col };
           newState.validMoves = findValidMoves({ row, col }, grid);
+
+          if (soundEnabled) playSelectSound();
+
           return newState;
         }
 
         return newState;
       });
     },
-    [countMarbles, checkRemainingMoves, findValidMoves],
+    [countMarbles, checkRemainingMoves, findValidMoves, soundEnabled],
+  );
+
+  const handleBoardKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      switch (event.key.toLowerCase()) {
+        case "arrowup":
+        case "w":
+          event.preventDefault();
+          moveFocus(-1, 0);
+          break;
+        case "arrowdown":
+        case "s":
+          event.preventDefault();
+          moveFocus(1, 0);
+          break;
+        case "arrowleft":
+        case "a":
+          event.preventDefault();
+          moveFocus(0, -1);
+          break;
+        case "arrowright":
+        case "d":
+          event.preventDefault();
+          moveFocus(0, 1);
+          break;
+        case "enter":
+        case " ":
+          event.preventDefault();
+          handleMarbleClick(focused.row, focused.col);
+          break;
+        default:
+          break;
+      }
+    },
+    [moveFocus, focused, handleMarbleClick],
   );
 
   return (
@@ -196,7 +275,9 @@ export default function PegSolitaire() {
           boardRef={boardRef}
           gameState={gameState}
           boardSize={boardSize}
+          focused={focused}
           handleMarbleClick={handleMarbleClick}
+          handleBoardKeyDown={handleBoardKeyDown}
         />
       </div>
     </div>

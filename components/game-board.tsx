@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -9,8 +10,14 @@ export default function GameBoard({
   boardRef,
   gameState,
   boardSize,
+  focused,
   handleMarbleClick,
+  handleBoardKeyDown,
 }: GameBoardProps) {
+  useEffect(() => {
+    boardRef.current?.focus();
+  }, [boardRef]);
+
   const renderBoard = () => {
     const { grid, selected, validMoves } = gameState;
     const gridSize = 7;
@@ -34,6 +41,7 @@ export default function GameBoard({
         const isValidMove = validMoves.some(
           (move) => move.row === row && move.col === col,
         );
+        const isFocused = focused.row === row && focused.col === col;
 
         elements.push(
           <motion.div
@@ -49,10 +57,17 @@ export default function GameBoard({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
             onClick={() => isValidMove && handleMarbleClick(row, col)}
+            role="gridcell"
+            aria-label={
+              isValidMove
+                ? `Empty hole, row ${row + 1}, column ${col + 1}, valid move`
+                : `Empty hole, row ${row + 1}, column ${col + 1}`
+            }
             className={cn(
               "absolute rounded-full transition-all duration-300",
               "bg-red-600",
               isValidMove && "cursor-pointer",
+              isFocused && "ring-2 ring-offset-2 ring-blue-400",
             )}
           />,
         );
@@ -64,6 +79,7 @@ export default function GameBoard({
               className={cn(
                 "absolute cursor-pointer rounded-full bg-zinc-900",
                 isSelected ? "ring-2 ring-yellow-400" : "",
+                isFocused && "ring-2 ring-offset-2 ring-blue-400",
               )}
               style={{
                 width: `${marbleSize}px`,
@@ -98,6 +114,11 @@ export default function GameBoard({
                 boxShadow: "0 6px 10px rgba(0,0,0,0.3)",
               }}
               whileTap={{ scale: 0.9 }}
+              role="gridcell"
+              aria-label={`Marble, row ${row + 1}, column ${col + 1}${
+                isSelected ? ", selected" : ""
+              }`}
+              aria-selected={isSelected}
             >
               <motion.div
                 className="absolute rounded-full bg-zinc-700"
@@ -126,10 +147,14 @@ export default function GameBoard({
     <div className="relative aspect-square w-full max-w-[95vw] sm:max-w-[520px] md:max-w-[640px]">
       <motion.div
         ref={boardRef}
-        className="absolute inset-0 scale-[1.05] rounded-full bg-white p-1 shadow-[0_0_30px_rgba(0,0,0,0.2)] sm:scale-100"
+        className="absolute inset-0 scale-[1.05] rounded-full bg-white p-1 shadow-[0_0_30px_rgba(0,0,0,0.2)] outline-none sm:scale-100"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
+        tabIndex={0}
+        role="grid"
+        aria-label="Peg solitaire board. Use arrow keys or WASD to move focus and Enter or Space to select or jump a marble."
+        onKeyDown={handleBoardKeyDown}
       >
         <div className="relative h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-red-500 to-red-600">
           <div

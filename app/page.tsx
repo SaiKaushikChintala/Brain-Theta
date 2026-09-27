@@ -1,11 +1,14 @@
 import PegSolitaire from "@/components/peg-solitaire";
 import GameMenu from "@/components/game-menu";
+import { SoundProvider } from "@/components/sound-provider";
 
 export default function Home() {
   return (
     <main>
-      <PegSolitaire />
-      <GameMenu />
+      <SoundProvider>
+        <PegSolitaire />
+        <GameMenu />
+      </SoundProvider>
     </main>
   );
 }
